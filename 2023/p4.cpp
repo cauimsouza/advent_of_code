@@ -64,9 +64,8 @@ int TotalNumCards(const vector<Card>& cards) {
     vector<int> copies(cards.size(), 1);
     for (int i = 0; i < cards.size(); i++) {
        int n = cards[i].GetNumMatches(); 
-       int extra_copies = copies[i];
        for (int j = 1; j <= n && i + j < cards.size(); j++) {
-           copies[i + j] += extra_copies;
+           copies[i + j] += copies[i];
        }
     }
     
