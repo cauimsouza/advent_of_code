@@ -10,9 +10,39 @@ struct MapRange {
     ll len;
 };
 
+class RangeMapper;
+class ProductMapper;
+
 class Mapper {
 public:
     virtual ll Map(ll n) const = 0;
+    
+    ll FindMinInterval(ll start, ll length) {
+        set<ll> points = TransitionPoints(start, length);
+        ll ans = numeric_limits<ll>::max();
+        for (ll point : points) {
+            ans = min(ans, Map(point));
+        }
+        return ans;
+    }
+
+protected:
+    virtual set<ll> TransitionPoints() const = 0;
+    
+    set<ll> TransitionPoints(ll start, ll length) const {
+        set<ll> points;
+        points.insert(start);
+        points.insert(start + length - 1);
+        
+        set<ll> tpoints = TransitionPoints();
+        for (auto it = tpoints.lower_bound(start); it != tpoints.end() && *it < start + length; it++) {
+            points.insert(*it);
+        }
+        return points; 
+    }
+    
+    friend class RangeMapper;
+    friend class ProductMapper;
 };
 
 class RangeMapper : public Mapper {
@@ -34,11 +64,21 @@ public:
             return n;
         }
 
-        it = prev(it);
+        it--;
         if (n >= it->first + it->second.len) {
             return n;
         } 
         return (n - it->first) + it->second.dst;
+    }
+    
+
+protected:
+    set<ll> TransitionPoints() const {
+        set<ll> points;
+        for (const auto& [src, dstlen] : src2dstlen_) {
+            points.insert(src);
+        }
+        return points;
     }
 
 private:
@@ -55,6 +95,14 @@ public:
 
     ll Map(ll n) const {
         return a_->Map(b_->Map(n));
+    }
+    
+protected:
+    set<ll> TransitionPoints() const {
+        set<ll> pointsa = a_->TransitionPoints();
+        set<ll> pointsb = b_->TransitionPoints();
+        pointsa.insert(pointsb.begin(), pointsb.end());
+        return pointsa;
     }
 
 private:
@@ -125,15 +173,31 @@ pair<vector<ll>, Mapper*> ReadInput(const string& filename) {
     return make_pair(seeds, ComposeMappers(mappers));
 }
 
+vector<pair<ll, ll>> SeedsToSeedIntervals(const vector<ll>& seeds) {
+    vector<pair<ll, ll>> seed_intervals;
+    for (int i = 0; i < seeds.size(); i += 2) {
+        seed_intervals.push_back(make_pair(seeds[i], seeds[i + 1]));
+    }
+    return seed_intervals;
+}
+
+using ii = pair<int, int>;
+
 int main() {
     const auto [seeds, mapper] = ReadInput("input_p5.txt");
 
-    ll min_location = numeric_limits<ll>::max();
+    ll ans1 = numeric_limits<ll>::max();
     for (ll seed : seeds) {
-        min_location = min(min_location, mapper->Map(seed));
+        ans1 = min(ans1, mapper->Map(seed));
     }
-
-    printf("Answer to part 1 is %lld\n", min_location);
+    printf("Answer to part 1 is %lld\n", ans1);
+    
+    ll ans2 = numeric_limits<ll>::max();
+    vector<pair<ll, ll>> seed_intervals = SeedsToSeedIntervals(seeds); 
+    for (const auto& [start, len] : seed_intervals) {
+        ans2 = min(ans2, mapper->FindMinInterval(start, len));
+    }
+    printf("Answer to part 2 is %lld\n", ans2);
 
     return 0;
 }
