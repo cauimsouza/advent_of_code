@@ -14,7 +14,7 @@ vector<string> ReadFile(const string& filename) {
     return lines;
 }
 
-int Hash(const string& line, int start, int end) {
+int HashSubstr(const string& line, int start, int end) {
     int h = 0;
     for (int i = start; i <= end; i++) {
         h = ((h + line[i]) * 17) % 256;
@@ -28,12 +28,12 @@ int SolvePart1(const string& line) {
     int j = 0;
     while (j < line.size()) {
         if (line[j] == ',') {
-            sum += Hash(line, i, j - 1);
+            sum += HashSubstr(line, i, j - 1);
             i = j + 1;
         }
         j++;
     }
-    sum += Hash(line, i, j - 1);
+    sum += HashSubstr(line, i, j - 1);
     return sum;
 }
 
@@ -48,11 +48,15 @@ private:
     };
     vector<Node*> buckets;
     
+    int Hash(const string& key) {
+        return HashSubstr(key, 0, key.size() - 1) % buckets.size();
+    }
+    
 public:
     HashMap(int nbuckets) : buckets(nbuckets, nullptr) {
         string s = "";
         for (int i = 0; i < nbuckets; i++) {
-            Node *hd = new Node(s, 0);
+            Node* hd = new Node(s, 0);
             buckets[i] = hd;
         } 
     }
@@ -70,10 +74,8 @@ public:
     }
     
     void Insert(const string& key, int val) {
-        int h = Hash(key, 0, key.size() - 1); 
-        
+        int h = Hash(key);
         Node* node = buckets[h];
-        
         while (node->next != nullptr) {
             Node* next = node->next;
             if (next->key == key) {
@@ -87,7 +89,7 @@ public:
     }
     
     void Delete(const string& key) {
-        int h = Hash(key, 0, key.size() - 1);
+        int h = Hash(key);
         Node* node = buckets[h];
         while (node->next != nullptr) {
             Node* next = node->next;
