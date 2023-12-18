@@ -55,51 +55,60 @@ Dir TurnRight(Dir dir) {
     exit(1);
 }
 
-coordt Advance(coordt coord, Dir dir) {
+coordt Advance(coordt coord, Dir dir, int nsteps) {
     auto [i, j] = coord;
 
     switch (dir) {
         case Left:
-            return coordt(i, j - 1);
+            return coordt(i, j - nsteps);
         case Right:
-            return coordt(i, j + 1);
+            return coordt(i, j + nsteps);
         case Up:
-            return coordt(i - 1, j);
+            return coordt(i - nsteps, j);
         case Down:
-            return coordt(i + 1, j);
+            return coordt(i + nsteps, j);
     }
     printf("Error");
     exit(1);
 }
 
-vector<four_tp> GetNeighbours(coordt node, Dir dir, int rem) {
-    vector<four_tp> neighbours;
+vector<five_tp> GetNeighbours(coordt node, Dir dir, int rem, int min_same_dir, int max_same_dir) {
+    vector<five_tp> neighbours;
 
     if (rem > 0) {
-        auto [ii, jj] = Advance(node, dir);
-        neighbours.push_back(four_tp(ii, jj, dir, rem - 1));
+        auto [ii, jj] = Advance(node, dir, 1);
+        neighbours.push_back(five_tp(1, ii, jj, dir, rem - 1));
     }
 
-    coordt neighbour = Advance(node, TurnLeft(dir));
-    neighbours.push_back(four_tp(neighbour.first, neighbour.second, TurnLeft(dir), 2));
+    coordt neighbour = Advance(node, TurnLeft(dir), min_same_dir);
+    neighbours.push_back(five_tp(min_same_dir, neighbour.first, neighbour.second, TurnLeft(dir), max_same_dir - min_same_dir));
 
-    neighbour = Advance(node, TurnRight(dir));
-    neighbours.push_back(four_tp(neighbour.first, neighbour.second, TurnRight(dir), 2));
+    neighbour = Advance(node, TurnRight(dir), min_same_dir);
+    neighbours.push_back(five_tp(min_same_dir, neighbour.first, neighbour.second, TurnRight(dir), max_same_dir - min_same_dir));
 
     return neighbours;
 }
 
-int GetDistance(const vector<string>& grid) {
+int GetDistance(const vector<string>& grid, int min_same_dir, int max_same_dir) {
     const int n = grid.size();
     const int m = grid[0].size();
 
     map<four_tp, int> dists;
     priority_queue<five_tp, vector<five_tp>, greater<five_tp>> pq;
 
-    pq.push(five_tp(0, 0, 0, Right, 3));
-    pq.push(five_tp(0, 0, 0, Down, 3));
-    dists[four_tp(0, 0, Right, 3)] = 0;
-    dists[four_tp(0, 0, Down, 3)] = 0;
+    int d = 0;
+    for (int j = 1; j <= min_same_dir; j++) {
+        d += grid[0][j] - '0';
+    }
+    dists[four_tp(0, min_same_dir, Right, max_same_dir - min_same_dir)] = d;
+    pq.push(five_tp(d, 0, min_same_dir, Right, max_same_dir - min_same_dir));
+
+    d = 0;
+    for (int i = 1; i <= min_same_dir; i++) {
+        d += grid[i][0] - '0';
+    }
+    dists[four_tp(min_same_dir, 0, Down, max_same_dir - min_same_dir)] = d;
+    pq.push(five_tp(d, min_same_dir, 0, Down, max_same_dir - min_same_dir));
 
     while (!pq.empty()) {
         auto [dist, i, j, dir, rem] = pq.top();
@@ -109,16 +118,22 @@ int GetDistance(const vector<string>& grid) {
 
         if (i == n - 1 && j == m - 1) return dist;
 
-        vector<four_tp> neighbours = GetNeighbours(coordt(i, j), dir, rem);
-        for (const four_tp& neighbour : neighbours) {
-            auto [ii, jj, dir, rem] = neighbour;
+        vector<five_tp> neighbours = GetNeighbours(coordt(i, j), dir, rem, min_same_dir, max_same_dir);
+        for (const five_tp& neighbour : neighbours) {
+            auto [nsteps, ii, jj, dir, rem] = neighbour;
 
             if (ii < 0 || ii >= n || jj < 0 || jj >= m) continue;
 
-            int d = dist + grid[ii][jj] - '0';
-            if (dists.count(neighbour) > 0 && dists[neighbour] <= d) continue;
+            int d = dist;
+            for (int k = 1; k <= nsteps; k++) {
+                auto [a, b] = Advance(coordt(i, j), dir, k);
+                d += grid[a][b] - '0';
+            }
 
-            dists[neighbour] = d;
+            four_tp dists_node = four_tp(ii, jj, dir, rem);
+            if (dists.count(dists_node) > 0 && dists[dists_node] <= d) continue;
+
+            dists[dists_node] = d;
             pq.push(five_tp(d, ii, jj, dir, rem));
         }
     }
@@ -128,7 +143,8 @@ int GetDistance(const vector<string>& grid) {
 
 int main() {
     vector<string> grid = ReadFile("input.txt");
-    printf("Answer to part 1 is %d\n", GetDistance(grid));
+    printf("Answer to part 1 is %d\n", GetDistance(grid, 1, 3));
+    printf("Answer to part 2 is %d\n", GetDistance(grid, 4, 10));
 
     return 0;
 }
