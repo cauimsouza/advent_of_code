@@ -70,6 +70,7 @@ let points_of_lines move_of_line lines =
   points_of_moves moves (0, 0) [(0, 0)]
   |> List.rev
 
+(* Shoelace formula *)
 let area points =
   let open Int64 in
   let points = List.map (fun (x, y) -> (of_int x, of_int y)) points in
