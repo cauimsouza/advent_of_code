@@ -2,7 +2,6 @@
 
 using namespace std;
 
-using coordt = pair<int, int>;
 using ll = long long;
 
 vector<string> ReadFile(const string& filename) {
@@ -23,22 +22,6 @@ enum Dir {
     Up,
     Down,
 };
-
-coordt Advance(coordt coord, Dir dir) {
-    auto [i, j] = coord;
-    switch (dir) {
-        case Left:
-            return coordt(i, j - 1);
-        case Right:
-            return coordt(i, j + 1);
-        case Up:
-            return coordt(i - 1, j);
-        case Down:
-            return coordt(i + 1, j);
-    }
-    printf("error\n");
-    exit(1);
-}
 
 struct Move {
     Dir dir;
